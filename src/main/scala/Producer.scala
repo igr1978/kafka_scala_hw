@@ -33,19 +33,16 @@ object Producer extends App {
 
   val producer = new KafkaProducer(props, new StringSerializer, new StringSerializer)
   try {
-    var id: Long = 0
-    records.foreach { book =>
-      id += 1
-      val msg_out: String = Serialization.write(book)(DefaultFormats)
+    records.zipWithIndex.foreach { r =>
+      val msg_out: String = Serialization.write(r._1)(DefaultFormats)
+      val record = new ProducerRecord[String, String](topic, r._2.toString, msg_out)
 
-      val record = new ProducerRecord[String, String](topic, id.toString, msg_out)
       val metadata = producer.send(record)
 
-      printf(s"sent record: (key=%s value=%s) " +
-        "meta(partition=%d, offset=%d)\n",
-        record.key(), record.value(),
-        metadata.get().partition(),
-        metadata.get().offset())
+      printf(s"sent record: (key=${record.key} value=${record.value}), meta(partition=${metadata.get.partition}, offset=${metadata.get.offset})\n")
+
+//      printf(s"sent record: (key=%s value=%s) meta(partition=%d, offset=%d)\n",
+//        record.key(), record.value(), metadata.get().partition(), metadata.get().offset())
     }
   }
   catch {
